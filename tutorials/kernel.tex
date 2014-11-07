@@ -1,0 +1,104 @@
+\chapter{Introduction to Kernel Regression}
+
+
+\section{Nonparametric Density Estimation}
+
+Recall the definition of pdf of a random variable $X$ is
+\begin{equation}
+f(x)=\lim_{h \rightarrow 0} \frac{1}{2h} P(x-h < X < x+h)
+\end{equation}
+
+We can approximate this for a given value of $h$ as
+\begin{equation}
+\hat{f(x)}=\frac{1}{N} \frac{1}{2h} [\mbox{number of $X_1, \cdots,
+X_N$ falling in the interval} (x-h, x+h)]
+\end{equation}
+
+The "naive" estimator is
+\begin{equation}
+\hat{f(x)}=\frac{1}{N} \sum_{i=1}^N \frac{1}{h} w(\frac{x-X_i}{h})
+\end{equation}
+where $w$ is a weighting function (rectangular kernel) defined as
+\begin{equation}
+w(z)=\left\{ \begin{array}{ll} \frac{1}{2} & \textrm{if} \ |z|<1
+\\ 0 & \textrm{otherwise} \end{array} \right.
+\end{equation}
+
+A broad class of density functions, can be defined as
+\begin{equation}
+\hat{f(x)}=\frac{1}{N} \sum_{i=1}^N \frac{1}{h} K(\frac{x-X_i}{h})
+\end{equation}
+where $K$ refers to the kernel and $h$ is the bandwidth.
+
+\section{Nonparametric Regression}
+
+The fitted values from a regression model are estimates of the
+expectation of the dependent variable conditional on the values of the
+explanatory variables for each observation.  Linear regression models
+assumes that the expectation of the dependent variable conditional on
+independent variables is an affine function of independent variables.
+An alternative approach is to use a nonparametric regression, which
+estimates $\rm E(y_t|X_t)$ directly, without an assumptions about
+functional form.
+
+The simplest approach is kernel regression.  We suppose that two
+random variables $Y$ and $X$ are jointly distributed, and we wish to
+estimate the conditional expectation $\mu (x) \equiv \mbox{E} (Y|x)$
+as a function of $x$, using a sample of paired observation $(y_t,
+x_t)$ for $t=1, \dots, n$.
+
+Consider the function $G(x)$ defined as:
+\begin{equation}
+G(x)=\mbox{E} (Y \cdot I(X \le x))= \int^x_{- \infty}
+\int^{\infty}_{-\infty} y f(y,z) dy dz
+\end{equation}
+
+Let $g(x) \equiv G'(x)$ denotes the first derivative of $G(x)$.
+Then
+\begin{equation}
+g(x)= \int^{\infty}_{-\infty} y f(y,x) dy =f(x)
+\int^{\infty}_{-\infty} y f(y|x) dy =f(x) \mbox{E} (Y|x)
+\end{equation}
+
+We use the biased but smooth estimator of $G(x)$
+\begin{equation}
+\hat G_h(x)=\frac{1}{n} \sum_{t=1}^n y_t K(\frac{x-x_i}{h})
+\end{equation}
+
+Defining $\hat g_h(x)$ as the derivative of $\hat G_h(x)$ and
+using the kernel estimator to estimate the marginal density of $X$
+leads to the following estimator of $\mu (x)$:
+\begin{equation}
+\hat \mu_h(x)=\frac{\hat g_h(x)}{\hat f_h(x)}.
+\end{equation}
+
+This is called Nadaraya-Watson estimator.  It simplifies to
+\begin{equation}
+\hat \mu_h(x)=\frac{\sum_{t=1}^{n}y_t k_t}{\sum_{t=1}^{n}k_t}, \
+k_t \equiv k(\frac{x-x_t}{h}), \ k_t \equiv K'_t.
+\end{equation}
+
+
+We define the cross-validation function by the formula
+\begin{equation}
+\mbox{CV}(h)=\frac{1}{n} \sum_{t=1}^nw(x_t)(y_t-\hat y_h^{(t)})^2
+\end{equation}
+where $\hat y_h^{(t)}$ is the leave-one-out estimator, $w(x_t)$ is a
+weight.  When we use cross validation, we evaluate $\mbox{CV}(h)$
+for a number of values of $h$ and pick the value that minimizes it.
+
+\section{Intuition}
+
+The idea of kernel regression is to use a non-parametric method to
+estimate the relationship between $Y$ and $X$.  Say we have $m$ pairs
+of $x_i$ and $y_i$ observed, in the interval of $a$ and $b$.  The idea is
+to put a kernel function at every point of $x_i$ observed. Then, between
+, divide the interval into $n$ equal intervals, $x_1$ , $x_2$,...,
+$x_t$, ..., $x_n$.  At each of these points, some of them do not have
+observed $Y$ and $X$.  We need to predict $y_t$ for each $x_t$.  The
+way to do it is to use weighted average of all the $y_i$'s observed as
+an estimate of $\hat y_t$.  The weight is the pdf of each kernel density at
+the point of $x_i$.  Therefore, the larger the distance between $x_i$
+and $x_t$, the smaller the weight.  The bandwidth determines the
+variance of the density.  The larger the bandwidth, the flater the
+density, the larger the weight a far point can get.

@@ -1,0 +1,70 @@
+\chapter{An introduction to Quasi-MLE Poisson}
+
+\section{Poisson Model}
+  
+If the intereseted variable is a count data variable, it is natural to model it as a Poisson process.  The number of occurance follows a Poisson process:
+
+\begin{equation}
+{\rm Pr} [Y=y]=\frac{e^{-\mu} \mu^y}{y! }
+\end{equation}
+
+One of Poisson's properties is that it has equal variance as its mean:
+
+\begin{equation}
+{\rm E} [Y]={\rm Var} [Y]=\mu
+\end{equation}
+
+
+In a count data model such as Poisson regression model, we are modeling log of the expected counts:
+
+\begin{equation}
+\log ({\rm E}( Y) )=\bf X_i' \beta
+\end{equation}
+
+The log-likelihood function is
+\begin{equation}
+\log L(\beta)= \sum_{i=1}^N {- \exp (X_i' \beta) + y_i X_i' \beta - \ln y_i!}
+\end{equation}
+
+To maximize it, the first order condition is
+
+\begin{equation}
+\sum_{i=1}^N (y_i - \exp (X_i' \beta) )X_i'=0 \label{first_order}
+\end{equation}
+
+We can use Newton-Raphson or other optimization algorithms to find the solution for the first order condition.  
+
+Note that in equation \ref{first_order}, if $X_i'$ includes a constant, then $(y_i - \exp (X_i' \beta) )$ sums to zero.  If ${\rm E} [y_i|X_i] = \exp (X_i' \beta)$, then the summation on the left-hand side has expectation of zero.  Hence the only specification needed to apply equation \ref{first_order} is the conditional expectation of $Y$ given $X$.  Even the data is not Poisson-distributed, the estimator by equation \ref{first_order} is still consistent.  Therefore, this estimator is called quasi\_ML (QML) Poisson estimator.
+
+
+Although the QML Poisson estimator is consistent under relatively weak condition, the regular variance estimator for the coefficients are not valid anymore.
+
+If a stronger assumption is made that the data follows a Poisson distribution, then the error term has a variance which equals to the mean of $Y$.  The estimator $\hat \beta_P$ (ML estimator) follows a normal distribution asymptotically with a variance matrix
+
+
+
+\begin{equation}
+ {\rm Var}_{ML} [\hat \beta_P] = (\sum_{i=1}^N \mu_i X_i X_i')^{-1}
+\end{equation}
+
+
+On the other hand, the variance matrix for the  QML Poisson estimator $\hat \beta_{QML}$ is 
+
+\begin{equation}
+ {\rm Var}_{QML} [\hat \beta_P] = (\sum_{i=1}^N \mu_i X_i X_i')^{-1} (\sum_{i=1}^N \omega_i X_i X_i')^{-1} (\sum_{i=1}^N \mu_i X_i X_i')^{-1}
+\end{equation}
+where $\omega_i={\rm Var} [y_i|X_i] $ is the conditional variance of $y_i$.
+
+
+
+
+\section{Implementation}
+
+Poisson estimation is implemented in almost every statistical package.  However, some of them may not work if you have a continuous dependent variable.
+
+Stata's implementation of Poisson model: poisson and xtpoisson do take
+continuous dependent variable.  However, if you intend to use it as
+QMLE-Poisson, standard errors need to be adjusted.  Those two
+procedures do not adjust for standard errors.  A user-written program
+called xtpqml calls for xtpoisson and it calculates robust standard
+error which is suggested by Wooldridge (1999).

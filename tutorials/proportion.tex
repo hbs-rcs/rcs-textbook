@@ -1,0 +1,62 @@
+\chapter{How to estimate a model when the dependent variable is a proportion}
+
+\section{QMLE Logit}
+
+In a regression model, when the dependent variable is a proportion, a different approach than OLS is proposed by Papke and Wooldridge (1996)
+
+\url{http://www.stata.com/support/faqs/stat/logit.html}
+
+\url{http://www.ats.ucla.edu/stat/Stata/faq/proportion.htm}
+
+
+
+I'll try to summarize what they suggest.
+
+OLS in this case is inappropriate.  A proportion is bounded between 0 and 1, but the predicted values from an OLS regression can never be guaranteed to lie in the unit interval.
+
+The transitional way of transforming the data by a logit function is not appropriate.  It can be formulated as 
+\[ {\rm E} ({ \rm log} [y/(1-y)] | X ]= X \beta \]
+
+This model has two drawbacks:
+
+\begin{itemize}
+\item The model cannot be true if $y$ takes 0 or 1.
+\item Even if the model is well defined.  We cannot recover $ {\rm E} [ y | x] $ from it, which is ultimately what we want.
+\end{itemize}
+
+
+Papke and Wooldridge (1996) proposed the following model:
+
+Their assumption is that for all $i$,
+
+\begin{equation}
+{\rm E} (y_i | x_i) = G(X_i \beta), 
+\label{eq1}
+\end{equation}
+where $G()$ is a cumulative distribution function (cdf).  Most popular ones are logistic function and normal cdf.
+
+Then the log-likelihood function is given by 
+\begin{equation}
+ l_i({\bf b}) = y_i \log [ G(X_i' {\bf b})] + (1- y_i) \log [ 1- G(X_i' {\bf b})], 
+\label{eq2}
+\end{equation}
+which looks the same as our familiar logit log-likelihood function.  The difference is that in a logit model, $y_i$ is a binary variable; here $y_i$ can take any value between 0 and 1.  
+
+The powerful result from Papke and Wooldridge (1996) is that they proved that under assumption \ref{eq1}, $\hat \bf b $ is consistent, regardless of the actual distribution of $y$ is.  This is why \ref{eq2} is called Quasi-MLE or QMLE since $y$ does not have to have a logistic distribution.  As long as the mean of $y$ is correctly specified the QMLE estimator is consistent.
+
+Therefore, we should follow Stata's advice of using glm when we have a proportion as our dependent variable.
+
+\section{beta distribution}
+
+Another way to model a proportion is to assume beta distribution, that
+is, $y \sim beta(\alpha, \beta)$.
+
+Then model the mean of the distribution.
+
+Specifically,
+
+\[  { \rm log} [\mu /(1- \mu)] | X ]= X \eta\]
+
+here $\mu = \frac{\alpha}{\alpha + \beta}$.  
+
+In Stata, $betafit$ is the command which implements this.

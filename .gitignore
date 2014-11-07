@@ -1,0 +1,8 @@
+*.aux
+/textbook.dvi
+/textbook.fdb_latexmk
+/textbook.fls
+/textbook.log
+/textbook.out
+/textbook.pdf
+/textbook.toc
