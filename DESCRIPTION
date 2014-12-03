@@ -1,0 +1,8 @@
+Package: rcs
+Version: 0.0.1
+Depends:
+    R (>= 3.1.0),
+    knitr (>= 1.8),
+    car (>= 2.0-22),
+    gmm (>= 1.5-0),
+    strucchange (>= 1.5-0)

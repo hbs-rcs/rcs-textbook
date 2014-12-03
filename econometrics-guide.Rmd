@@ -9,6 +9,13 @@ geometry: margin=1in
 toc: true
 ---
 
+```{r, echo=FALSE}
+library(knitr)
+library(MASS)
+
+opts_chunk$set(error=FALSE)
+```
+
 # OLS
 
 A linear model with $n$ observations and $k$ regressors can be
@@ -278,7 +285,7 @@ X <- cbind(1,mtcars[,c('disp','hp','wt')])
 y <- mtcars$mpg
 
 # note that I have a rough idea of the starting values from OLS esimators first; otherwise it may converge to some wrong local maximum.  Annoying.
-optim(c(1,1,-1,-1,-1), method="L-BFGS-B", fn=ols.lf1, lower=c(1e-6,-Inf,-Inf,-Inf,-Inf), upper=rep(Inf,5), y=y, X=as.matrix(X))
+optim(c(1,1,-1,-1,-1), method="L-BFGS-B", fn=ols.lf, lower=c(1e-6,-Inf,-Inf,-Inf,-Inf), upper=rep(Inf,5), y=y, X=as.matrix(X))
 
 # it should match the OLS estimator
 
@@ -841,6 +848,7 @@ $x_2$; otherwise, we would not need instrumental variables.
 
 ```{r}
 ## DGP: data$y <- data$x + data$z + data$u
+library(sem)
 
 set.seed(66)
 nobs=10000
@@ -1407,6 +1415,7 @@ Here I use R's "gmm" library which makes things easy.  It expects two arguments:
 
 ```{r}
 ## DGP: data$y <- data$x + data$z + data$u
+library(gmm)
 
 set.seed(66)
 nobs=10000
@@ -1416,7 +1425,8 @@ sdww=1
 sdzz=1
 
 ## here we have three variables x,z,w.
-## z is the omitted variable,x and z are correlated,  w is the instrument, which is correlated with x, but not z.  u is indepent of everything else.
+## z is the omitted variable,x and z are correlated,  w is the instrument, which
+## is correlated with x, but not z.  u is indepent of everything else.
 crxz=.6
 crzw=0
 crxw=.8

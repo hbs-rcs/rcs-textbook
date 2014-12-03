@@ -1,3 +1,6 @@
+bundle:
+	Rscript bundle.R
+
 econometrics-guide.md: econometrics-guide.Rmd
 	./knit.sh econometrics-guide.Rmd
 
