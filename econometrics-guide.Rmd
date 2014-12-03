@@ -70,7 +70,7 @@ $$\bar R^2=1-\frac{SSR/(n-k)}{SST/(n-1)}$$
 
 ## The Geometry of Least Squares
 
-![](ols.jpg)
+![](figures/ols.jpg)
 
 For simplicity, let's assume there are two explanatory
 variables $x_1$ and $x_2$. $x_1$ and $x_2$ form a plane.  What OLS
@@ -1620,7 +1620,7 @@ them are severely biased from the "true" regression line.
 
 Here is a graph to illustrate from Davidson and MacKinnon.
 
-![Effects of truncation and censoring from Davidson and MacKinnon](davidson.jpg)
+![Effects of truncation and censoring from Davidson and MacKinnon](figures/davidson.jpg)
 
 ## Truncated Models
 
@@ -2545,7 +2545,7 @@ However, Weibull distribution does not allow for the possibility
 that the hazard may first increase then decrease over time.
 Log-normal distribution does allow this.
 
-![Various hazard functions from Davidson and MacKinnon](davidson2.jpg)
+![Various hazard functions from Davidson and MacKinnon](figures/davidson2.jpg)
 
 ## Log-likelihood function
 
