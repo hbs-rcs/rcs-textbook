@@ -1,0 +1,494 @@
+# The Method of Maximum Likelihood
+
+If we make the assumption that the error terms are normally
+distributed, the maximum likelihood estimators (MLE) coincide with
+the  least square estimators.  But MLE can also be applied
+to a wide variety of models other than regression models, and it
+generally generates estimators with excellent asymptotic
+properties.  The major disadvantage of MLE is that it requires
+stronger distributional assumptions than does the method of
+moments.
+
+## Basic Concepts
+
+Maximum likelihood estimation is to find the set of parameters which makes the current sample most likely given the statistical model.
+
+Suppose we have a sample of $n$ independent and identically distributed (IID) observations.  Each of them comes from some distribution function $f(\cdot, \bf \theta)$, where  parameters $\bf \theta$ is fixed.  The joint distribution of all the data points would be
+
+$$ f(x_1, x_2, \dots, x_n | \theta) = f(x_1 | \theta) \times f(x_2 | \theta) \times \dots \times f(x_n | \theta). $$
+
+It is referred to as the likelihood function of the model for the
+given data set.
+
+Then it's natural to estimate $\theta$ by picking the $\theta$ that maximize this joint distriubtion function.    A parameter vector $\hat \bf \theta$ at which the
+likelihood takes on its maximum value is called a maximum likelihood
+estimate, or MLE, of the parameters.
+
+Usually the log form of the likelihood function is preferred for computational purposes.
+
+## MLE for a linear model
+
+Consider the classical normal linear model:
+
+$$
+\bf y=X\beta+u, \quad u \sim N(0, \sigma^2 I)
+$$
+
+In this case, we have two parameters to estimate, $\sigma$ and $\bf \beta$.  The distribution of $\bf y | X$ is
+
+$$ f({\bf y, \beta, \sigma | X}) = \frac{1}{\sigma \sqrt{2 \pi}} \exp(-  \frac{({\bf y- X \beta})^2}{2 \sigma^2})$$
+
+The log-likelihood function is
+
+$$ l({\bf y, \beta, \sigma}) = -\frac{n}{2} \log{2 \pi} - \frac{n}{2} \log{2 \sigma^2} - \frac{1}{2 \sigma^2} \sum_{t=1}^n \bf (y-X \beta)'(y-X \beta) $$
+
+The maximization of the log-likelihood function will lead to the same estimator as the OLS estimator, for $\bf \beta$.  For $\sigma^2$, the MLE estimator is slightly different in limited sample, but asymptotically the same.  This is strictly based on the assumption of normally distributed error term.  Otherwise, these two estimators will be different.
+
+
+## Asymptotic Properties of MLE
+
+1.  Consistency
+$$
+{\rm plim} (\bf \hat \theta)=\theta.
+$$
+
+This is to say that MLE estimator can get arbitrarily close to the true parameter if the sample size gets to infinity.
+
+2.  Asymptotic Normality
+$$
+{\bf \hat \theta} \sim^a N(\bf \theta, I^{-1}(\theta)).
+$$
+
+This states that the asymptotic distribution of $\bf \hat \theta$
+is normal with mean $\bf \theta$ and variance given by the inverse
+of $\bf I(\theta)$, the information matrix, defined by
+
+$$
+{\bf I(\theta)}=E[(\frac{\partial l}{\partial
+\theta})(\frac{\partial l}{\partial
+\theta})']=-E[(\frac{\partial^2 l}{\partial \theta \partial
+\theta'})]
+$$
+
+The information matrix is the expected value of the inner product of gradient of the log-likelihood function, or the negative value of the expected value of the Hessian (second derivative of the log-likelihood function.
+
+3.  Asymptotic efficiency.
+
+If $\bf \hat \theta$ is the MLE estimator of $\theta$, $\bf V$ denotes the variance covariance matrix of $\bf \hat \theta$, then
+$$
+\sqrt n (\hat \theta -\theta) \rightarrow^d N(\bf 0, V)
+$$
+
+If $\bf \tilde V$ denotes the variance matrix of any other consistent,
+asymptotically normal estimator, then $\bf \tilde V- V$ is a positive
+semidefinite matrix. That means MLE estimator is the best (in terms of variance) consistent and asymptotically normal estimator.
+
+4.  Invariance.
+
+If $\hat \theta$ is the MLE of $\theta$ and $g(\theta)$ is a
+continuous function of $\theta$, then $g(\hat \theta)$ is the MLE of
+$g(\theta)$.
+
+
+## Example
+Let's look at the example of regression of car's mpg on disp, hp and wt. This time we use MLE. (R has a mle() function which I cannot make it work on this example.  So I am using optim().)
+
+```{r}
+library(car)
+library(stats4)
+ols.lf <- function(theta, y, X) {
+  beta <- theta[-1]
+  sigma2 <- theta[1]
+  if (sigma2 <= 0) return(NA)
+  n <- nrow(X)
+  e <- y - X%*%beta
+  logl <- ((-n/2)*log(2*pi)) - ((n/2)*log(sigma2)) - ((t(e)%*%e)/(2*sigma2))
+  return(-logl)
+}
+X <- cbind(1,mtcars[,c('disp','hp','wt')])
+y <- mtcars$mpg
+
+# note that I have a rough idea of the starting values from OLS esimators first; otherwise it may converge to some wrong local maximum.  Annoying.
+optim(c(1,1,-1,-1,-1), method="L-BFGS-B", fn=ols.lf, lower=c(1e-6,-Inf,-Inf,-Inf,-Inf), upper=rep(Inf,5), y=y, X=as.matrix(X))
+
+# it should match the OLS estimator
+
+lm1 <- lm(mpg~disp+hp+wt, data=mtcars)
+summary(lm1)
+
+```
+
+
+## Hypotheses Testing
+
+### Linear Hypotheses Testing
+
+Linear hypothesis can be framed as
+$$
+\rm H_0: \ \ \bf R\beta -r=0,
+$$
+where $\bf R$ is a $q \times k$ matrix of known constants, with $q <
+k$, and $\bf r$ is a $q$-vector of known constants.
+
+We assume that $u_i$ are normally distributed.
+
+$$
+\bf u \sim N(0, \sigma^2 I)
+$$
+
+Even if this assumption does not hold, we still have asympototic normality for $\bf u$.
+
+Since linear combination of normal variables are also normally
+distributed,
+$$
+\bf \hat \beta \sim N(\beta, \sigma^2 (X'X)^{-1})\\
+\bf R \hat \beta \sim N(R \beta, \sigma^2 R(X'X)^{-1}R')\\
+\bf R (\hat \beta - \beta) \sim N(0, \sigma^2 R(X'X)^{-1}R')
+$$
+
+Under null hypothesis,
+
+$$
+\bf (R \hat \beta - r) \sim N(0, \sigma^2 R(X'X)^{-1}R')
+$$
+
+Therefore,
+$$
+{\bf (R \hat \beta - r)'[\sigma^2 R(X'X)^{-1}R']^{-1} (R \hat
+\beta - r)} \sim \chi^2(q)
+$$
+
+Here we don't know $\sigma^2$.  However, it can be shown that
+$$
+{\bf \frac{\hat u' u}{\sigma^2}} \sim \chi^2(n-k)
+$$
+
+Then we have
+$$
+{\bf \frac{(R \hat \beta - r)'[ R(X'X)^{-1}R']^{-1} (R \hat \beta
+- r)/q}{\hat u' \hat u / (n-k)}} \sim F(q, n-k)
+$$
+
+This is an example of the $F$ test for any linear hypotheses testing.  $t$ test will be a special case of this.
+
+## Test of Structural Change (Chow test)
+
+Chow test is a test between two groups of observations.  For example,
+we have data on consumption function of prewar period and postward
+period.  It is natural to think of a test on whether consumption
+function parameters differ between prewar and postwar periods.  The
+null hypothesis is that there is no difference.
+
+Let $\bf y_i$, $\bf X_i$ ($i=1,2)$ indicate the appropriate
+partitioning of the data.  The unrestricted model may be written
+
+$$\bf
+\begin{bmatrix}\bf
+y_1 \\ \bf y_2
+\end{bmatrix}=
+\begin{bmatrix}\bf
+X_1 & \bf 0 \\ \bf 0 & \bf X_2
+\end{bmatrix}
+\begin{bmatrix}\bf
+\beta_1 \\ \bf \beta_2
+\end{bmatrix}
++u \quad u \sim N(0, \sigma^2I)
+$$
+
+The null hypothesis of no structural break is
+
+$$
+\rm H_0: \ \ \bf \beta_1 = \beta_2.
+$$
+
+Running OLS on two equations separately, we have
+
+$$\bf
+\begin{bmatrix}\bf
+\hat \beta_1 \\ \bf \hat \beta_2
+\end{bmatrix}=
+\begin{bmatrix}\bf
+X_1' X_1 & \bf 0 \\ \bf 0 & \bf X_2' X_2
+\end{bmatrix}^{-1}
+\begin{bmatrix}\bf
+X_1' y_1 \\ \bf X_2' y_2
+\end{bmatrix}
+=\begin{bmatrix}\bf (X_1' X_1)^{-1}X_1'y_1 \\ \bf (X_2' X_2)^{-1}
+X_2' y_2
+\end{bmatrix}
+$$
+
+Restricted model under null hypothesis
+
+$$\bf
+\begin{bmatrix}\bf
+y_1 \\ \bf y_2
+\end{bmatrix}=
+\begin{bmatrix}\bf
+X_1 \\ \bf X_2
+\end{bmatrix}
+\bf \beta +u
+$$
+
+The test of the null hypothesis is given by
+
+$$
+{\bf F= \frac{(\hat u_*' \hat u_*- \hat u' \hat u)/k}{\hat u' \hat
+u/ (n-2k)}} \sim F(k , n-2k)
+$$
+where $\hat u_*$ is the residual of the restricted model, $\hat u$ is the stacked residual of two unrestricted models.
+
+For example, for prewar period (suppose there is $n$ observations):
+
+$$
+y_1 = \beta_0 + \beta_1 x_1 + \beta_2 x_2
+$$
+
+For postwar period  (suppose there is $m$ observations):
+
+$$
+y_1 = \gamma_0 + \gamma_1 x_1 + \gamma_2 x_2
+$$
+
+The null hypothesis of no structural break is
+
+$$
+\rm H_0: \ \ \bf \beta_0 = \gamma_0, \beta_1 = \gamma_1, \beta_2 = \gamma_2.
+$$
+
+Running OLS on two equations separately, we have two sums of squares
+of error ($SSR_1$ and $SSR_2$).  The unrestricted error sum of squares
+is
+$$
+SSR_U = SSR_1 + SSR_2
+$$
+
+
+Then run the regression on the stacked sample of $n+m$ observations
+and get $SSR_R$.
+
+Then
+
+$$
+\frac{(SSR_R-SSR_U)/k}{SSR_U/(n+m-2k)} \sim F_{k, n+m-2k}.
+$$
+
+$k$ is number of restrictions; in this example, it is 3.
+
+
+
+
+The other way to do the same test is easier:  simply include
+interaction terms between group dummy and dependent variables in the
+regression.
+
+For our earlier example, we would estimate the model:
+
+
+
+$$
+y=\alpha_0 + \alpha_1 x_1 + \alpha_2 x2 + \eta_0 d + \eta_1 x_1d + \eta_2
+x_2d
+$$
+
+Here $d$ is a dummy variable for postward period.  The Chow test is
+simply a test on the hypothesis that all the coefficients involving
+$d$ are zero.  A regression of the above model with $n+m$ observations
+and a $F$ test are easy to do.
+
+$$
+\rm H_0: \ \ \bf \eta_0 = \eta_1 = \eta_2 = 0.
+$$
+
+### An example of Chow test in R
+Here we use an example from the "strucchange" library.
+
+```{r}
+## Example 7.4 from Greene (1993), "Econometric Analysis"
+## Chow test on Longley data
+data("longley")
+library(strucchange)
+## use structural change test from the library.
+sctest(Employed ~ Year + GNP.deflator + GNP + Armed.Forces, data = longley,
+  type = "Chow", point = 7)
+
+## which is equivalent to segmenting the regression via
+fac <- factor(c(rep(1, 7), rep(2, 9)))
+## here fac is the factor for segmenting it at point 7.
+fm0 <- lm(Employed ~ Year + GNP.deflator + GNP + Armed.Forces, data = longley)
+fm1 <- lm(Employed ~ fac/(Year + GNP.deflator + GNP + Armed.Forces), data = longley)
+## Here anova is returning the F test (Chow test). Equivalent to sctest results.
+anova(fm0, fm1)
+
+## estimates from Table 7.5 in Greene (1993)
+summary(fm0)
+summary(fm1)
+```
+
+## Heteroskedasticity and Autocorrelation Consistent Standard Errors
+
+### Variance estimator under homoscedasticity
+
+In OLS regression, the variance-covariance matrix of $\hat \beta$ is $${\rm var} \bf (\hat \beta) = {\rm E}\bf [(\hat \beta-\beta)(\hat \beta -\beta)']
+= {\rm E}\bf [(X'X)^{-1}X'uu'X(X'X)^{-1}] = \bf \sigma^2 (X'X)^{-1} $$
+
+ if $${\rm var} \bf (u)=\sigma^2 I$$.
+
+That is, the error term has mean zero and constant variance
+(homoscedasticity). The pairwise correlation between error terms
+is always zero (no serial correlation).
+
+The estimation of $\sigma^2$:
+
+$$
+s^2=\frac{ \bf \hat u' \hat u}{n-k}
+$$
+is an unbiased estimator of $\sigma^2$ (proof omitted).
+
+The standard estimate of the variance-covariance matrix of the OLS
+parameter estimates under the assumption of IID errors is
+$$
+{\rm \hat {Var}}(\hat \beta)=s^2 \bf (X'X)^{-1}
+$$
+
+### White’s estimator
+
+We made strong assumption that the error terms of the regression
+model are IID when we estimate the variance-covariance matrix of
+OLS estimator.  Under this assumption, the usual estimator of
+variance-covariance matrix of $\bf \hat \beta$ is consistent.  Now
+let's relax this assumption to only independent but not
+identically distributed.  Again, the linear regression models is
+
+$$
+\bf y=X\beta+u, \quad {\rm E} (u)=0, \quad {\rm E} (u u')=\Omega,
+$$
+where $\bf \Omega$ is the error variance-covariance matrix with
+diagonal elements being $\sigma_t^2$ for $t^{th}$ element,
+off-diagonal elements being zero.  In other words, the error terms
+are heteroscedastic.
+
+The variance-covariance matrix of the OLS estimator $\bf \hat
+\beta$ is equal to
+$$
+{\rm Var} \bf (\hat \beta) = {\rm E}\bf [(\hat \beta
+-\beta)(\hat
+\beta -\beta)'] \\
+= \bf [(X'X)^{-1}X'({\rm E}(uu'))X(X'X)^{-1}] \nonumber \\
+= \bf  (X'X)^{-1} X' \Omega X (X'X)^{-1} \nonumber
+$$
+
+If we know $\sigma_t^2$, then we would be able to estimate this
+"sandwich covariance matrix".  But we don't.
+$$
+{\rm Var} \bf (\hat \beta) = \bf \frac{1}{n}
+[\frac{1}{n}(X'X)]^{-1}[\frac{1}{n}X'\Omega
+X][\frac{1}{n}(X'X)]^{-1} \nonumber
+$$
+
+Let $y_t$ denote the $t$th observation on the dependent variable,
+and $x_t'=[1 x_{2t} \cdots x_{kt}]$ denote the $t$th row of the
+$\bf X$ matrix.  Then
+$$
+\bf X' \Omega X=\sum_{t=1}^n \sigma_t^2 x_t x_t'
+$$
+
+The White estimator replaces the unknown $\sigma_t^2$ by $\hat u_t^2$,
+the estimated OLS residuals.  This provides a consistent estimator of
+the variance matrix for the OLS coefficient vector and is particularly
+useful since it does not require any specific assumptions about the
+form of the heteroscedasticity.
+
+Therefore,
+$$
+\hat {\rm Var} \bf (\hat \beta) = \bf \frac{1}{n}
+[\frac{1}{n}(X'X)]^{-1}[\frac{1}{n}X' \hat \Omega
+X][\frac{1}{n}(X'X)]^{-1}\\
+\bf \hat \Omega = \rm{diag}  ({\hat u_1^2, \hat u_2^2, \cdots,
+\hat u_n^2})
+$$
+
+### Newey-West estimator
+
+
+White's estimator deals with the situation that we have
+heteroskedasticity (a diagonal $\Sigma$) of unknown form.  When we
+have serial correlation of unknown form (a non-diagonal $\Sigma$), we
+can estimate the variance-covariance matrix by a heteroskedasticity
+and autocorrelation consistent, or HAC, estimator.  Newey-West
+estimator is the most popular HAC estimator.
+
+Given a time series data set, suppose we are interested in estimating
+the mean vector (suppose we have more than one variable) and its
+variance.  We know that given IID data, we can apply central limit
+theorem: sample mean is a consistent estimator of the population mean
+and it's variance can be calculated since asymptotically the sample
+mean conforms to a normal distribution and the variance can be
+estimated, relatively easily.  However, in the case of time series
+data, autocorrelation usually exists.  We may be concerned the CLT may
+not work in this case.
+
+Fortunately, as proved in Hamilton (1994), if $\bf y_t$ is a
+covariance-stationary (meaning that the covariance is not a function
+of time) vector process, then the sample mean satisfies:
+
+$$\bf \bar y_t \to \mu , $$
+$$ {\bf S} = \lim_{T \to \infty} \bf  {T \cdot E[(\bar y_T - \mu)(\bar y_T -\mu)' ]} = \sum_{v=-\infty}^{\infty} \Gamma_v . $$
+where $\bf \Gamma_v$ is the variance-covariance matrix for $\bf y_t$ and $\bf y_{t-v}$.
+
+The first one says for a covariance-stationary vector process, the law
+of large numbers still holds.  The second one is used to calculate the
+standard error.
+
+If the data were generated by a vector MA(q) process, then
+
+$$ {\bf S} = \sum_{v=-q}^{q} \Gamma_v . $$
+
+A natural estimate is
+
+$$ \bf \hat S = \hat \Gamma_0 + \sum_{v=1}^{q} (\hat \Gamma_v + \hat \Gamma_v' ),$$
+
+where  $$ \bf \hat \Gamma_v = (1/T)  \sum_{t=v+1}^{T} (y_t- \bar y)(y_{t-v} - \bar y). $$
+
+This gives a consistent estimate of $\bf S$; however, it sometimes is
+not positive semidefinite.
+
+Newey-West (1987) suggested putting in a weight:
+
+$$ {\bf \hat S = \hat \Gamma_0} + \sum_{v=1}^{q} {(1- \frac{v}{q+1})} (\bf \hat \Gamma_v + \hat \Gamma_v' ), $$
+where $q$ is from the MA($q$) process.
+
+
+Consider a linear regression model:
+$$ y_t={ \bf x_t' \beta} + u_t $$
+
+Suppose we have the OLS estimator $\bf b_T$, then
+$$ \sqrt{T} ({\bf b_t - \beta}) = [(1/T) {\sum_{t=1}^T \bf x_t
+  x_t'}]^{-1} [({\sqrt{T}}) {\sum_{t=1}^{T} \bf x_t u_t'}] $$
+
+The first term converges in probability to some constant.  The second
+term is the sample mean of the vector $\bf x_t u_t$.
+
+Under general conditions,
+
+$$ \sqrt{T} ({\bf b_t - \beta}) \rightarrow^L N(0, Q^{-1}SQ^{-1}) $$
+
+where $S$ can be estimated by
+$$ {\bf \hat S_T = \hat \Gamma_{0T}} + \sum_{v=1}^{q} {(1- \frac{v}{q+1})} (\bf \hat \Gamma_{v,T} + \hat \Gamma_{v,T}' ), $$
+where
+$$ \hat \Gamma_{v,T}'= (1/T) \sum_{t=v+1}^T (x_t \hat u_{t, T} \hat u_{t-v, T} x_{t-v}'), $$
+where $\hat u_{t,T}$ is the OLS residual for data $t$ in a sample of size $T$.
+
+Overall, the variance of $\bf b_T$ is approximated by
+
+$$\hat \Sigma_{NW} = [\sum_{t=1}^T x_t x_t'] [ \sum_{t=1}^T \hat u_t^2 x_t x_t' +  \sum_{v=1}^{q} {(1- \frac{v}{q+1})} \sum_{t=v+1}^T (x_t \hat u_{t, T} \hat u_{t-v, T} x_{t-v}' + x_{t-v} \hat u_{t-v, T} \hat u_{t, T} x_{t}') ] [\sum_{t=1}^T x_t x_t']^{-1} $$
+
+
+This estimation obviously depends on the selection of $q$, the lag
+length beyond which we are willing to assume that the autocorrelation
+of $x_t u_t$ and $x_{t-v} u_{t-v}$ is essentially zero.  The rule of
+thumb for the selection of $q$ is $0.75 \cdot T^{\frac{1}{3}}$.
+Newey-West (1994) has suggested a way to automatically select the
+bandwidth $q$.  Here we omitted the discussion.  Both Stata and R now
+also implement Newey-West (1994) estimator, with no need to specify
+$q$.

@@ -1,0 +1,500 @@
+# Endogeneity
+
+When we discuss the linear model we assume that the regressors are
+exogenous, meaning that they are independent of or uncorrelated with
+the error term.  However, there could be reasons to believe that some
+regressors are correlated with the error term.  In that case we call
+those regressors endogenous.
+
+
+Under the classical assumptions OLS estimators are unbiased and
+consistent.  One key assumption is that the regressors have to be
+uncorrelated with the error term.  If this condition does not hold,
+OLS estimators are biased and inconsistent.
+
+When one independent variable does not satisfy this condition, we say
+this variable is endogenous.  When one variable is endogenous, the
+estimates of other coefficients will also be biased (or inconsistent).
+
+The most popular cure for endogeneity is to use instrumental variables.
+
+## Instrumental Variables (IV)
+
+The basic idea of IV is to use an exogenous variable (or exogenous variables) which is correlated with the endogenous independent variable to as an "instrument" for the endogenous variable.
+
+Suppose the linear regression model
+$$
+\bf y=X\beta+u, \quad {\rm E} (u u')=\sigma^2 I, \label{eqn:iv}
+$$
+ at least one of the explanatory variables in the $n \times k$
+matrix $\bf X$ is assumed not to be predetermined with respect to the
+error terms, or say, endogenous.
+
+Suppose we have a set of  variables $\bf Z$, an $n \times l$
+matrix of instruments , which satisfies the moment
+condition
+$$
+\bf Z'(y-X\beta)=0.
+$$
+That is, $\bf Z$ is uncorrelated with the error term.
+
+Here is what we do for two-stage least squares (2sls):
+
+Stage 1:  Regress each of the variables in the $\bf X$ matrix on
+$\bf Z$ to obtain a matrix of fitted values $\bf \hat X$,
+
+$$
+\bf \hat X=Z(Z'Z)^{-1}Z'X=P_ZX
+$$
+
+This is essentially to get the part of $\bf Z$ that is correlated with $\bf X$.  Or to say, to project $\bf X$ on to $\bf Z$.
+
+Stage 2:  Regress $\bf y$ on $\bf \hat X$ to obtain the estimated
+$\bf \beta$
+
+$$
+\bf  \hat \beta_{2sls}=(\hat X' \hat X)^{-1}(\hat X'
+y)=(X'P_ZX)^{-1}(X'P_Zy)=\hat \beta_{IV}
+$$
+
+Standard errors:
+
+$$
+Var \bf [ \hat \beta_{2sls}]= \hat \sigma^2 (\hat X' \hat X)^{-1}= \hat
+\sigma^2 (X'P_ZX)^{-1}
+$$
+where $\hat \sigma^2 ={\bf \hat u' \hat u} / N$.
+
+Note that $\bf \hat u = y- X \hat \beta_{2sls}$.
+
+If we do it manually by two steps, the second step will report a wrong
+standard error.  That is because the second stage regression will
+report standard errors based on $\bf \hat u = y- \hat X \hat
+\beta_{2sls}$.  Therefore, it's always recommanded to ask the
+statistical program to do a 2sls for you, since presumably that will
+give you correct standard errors.
+
+Geometry Illustration:
+
+Suppose the simplest case: $y = \beta_0 + \beta_ x + u$, where $x$
+can be decomposed into $x_1$, which is exogenous and $x_2$, which
+is endogenous. Therefore $x_2$ is parallel to $u$ and $x_1$
+perpendicular to $u$.  Suppose $z$ is a vector that is
+perpendicular to $x_2$ or $u$, but not perpendicular to $x_1$.
+Then $z$ can be an instrument for $x$.  The way instrumental
+variable works: Regress $x$ on $z$, suppose $\hat x_1$ is the
+projection.  Regress $y$ on $z$, $\hat y_2$ be the projection.
+Then the result of $\beta_2 =  \hat y_2 / \hat x_1$ is the same as
+$\beta_1= \hat y_1 / x_1$ (since the two triangles are similar).
+Here $\hat y_1$ is the projection of $y$ on $x_1$, which is
+hypothetical since we have no way to decompose $x$ into $x_1$ and
+$x_2$; otherwise, we would not need instrumental variables.
+
+```{r}
+## DGP: data$y <- data$x + data$z + data$u
+library(sem)
+
+set.seed(66)
+nobs=10000
+nDim = 3
+sdxx = 1
+sdww=1
+sdzz=1
+
+## here we have three variables x,z,w.
+## z is the omitted variable,x and z are correlated,  w is the instrument, which is correlated with x, but not z.  u is indepent of everything else.
+crxz=.6
+crzw=0
+crxw=.8
+
+covarMat = matrix( c(sdxx^2, crxz^2, crxw^2, crxz^2, sdzz^2, crzw^2,  crxw^2, crzw^2, sdww^2 ) , nrow=nDim , ncol=nDim )
+covarMat
+data  = data.frame(mvrnorm(n=nobs, mu=rep(0,nDim), Sigma=covarMat ))
+names(data) <- c('x','z','w')
+data$u <- rnorm(nobs,0,1)
+# dgp
+data$y <- data$x +  data$z + data$u
+
+lm <- lm(y~x, data=data)
+lm.full <- lm(y~ x + z, data=data)
+tsls.model <- tsls(y ~ x , ~ w , data=data)
+# lm is biased
+summary(lm)
+# lm.full is good
+summary(lm.full)
+# tsls is good.
+summary(tsls.model)
+
+```
+
+
+## Control Function Approach
+
+A second way to do an IV regression is also two-step approach: Regress
+$\bf X$ (endogenous) on $\bf Z$, get the residual: $\bf \hat
+v=X-Z(Z'Z)^{-1}Z'X$, then regress $y$ on $\bf X$ and $\hat v$ to get
+$\hat \beta_{IV}$.
+
+The difference between this approach and the 2sls approach is that in
+2sls we regress $y$ on $\bf \hat X$; in the control function approach,
+we regress $y$ on $\bf  X$ and $\hat v$.  They should both give you
+the same coefficient estimates.  There are advantages of using the
+control function approach.
+
+An example to show how to do 2sls manually, or using control function approach.
+
+```{r}
+## DGP: data$y <- data$x + data$z + data$u
+
+lm1 <- lm(y~x, data=data)
+lm2 <- lm(x~w, data=data)
+tsls.manual <- lm(data$y ~ lm2$fitted.values)
+summary(tsls.manual)
+
+# control function approach
+tsls.control <- lm(data$y ~ data$x + lm2$residual)
+summary(tsls.control)
+```
+
+This approach can be used to do a simple endogeneity test.  First, you
+can do a simple test of endogeneity of $\bf X$.  For example:
+
+
+reg x_endog x* z*
+predict v_x, resid
+reg y x_endog x* v_x
+test v_x
+
+
+Obviously, this test is based on $\bf Z$ being exogenous.
+
+Secondly, it works for some non-linear models, such as logit, probit,
+poisson, or any other glm models.  That is, if you have an endogenous
+variable in a glm model, you can regress that endogenous variable on
+instruments, get the residual, then run the glm model with the
+original regressors, plus the residual from the first stage.
+
+
+## Durbin-Wu-Hausman Test
+
+### Idea
+
+In econometric modeling, there are often questions on endogeneity.  Do
+we know how to test whether an independent variable is endogenous
+statistically?  The answer is: sort of, but not really.  We cannot do
+endogeneity test without a valid instrument.  Therefore, we have to
+have strong argument for a valid instrument first before we can do
+endogeneity test.
+
+
+With endogenous variables on the right-hand side of the equation, we
+need to use instrumental variable (IV) regression for consistent
+estimation.  However, with IV regression, we lose efficiency: the
+asymptotic variance of the IV estimator is larger, and can be much
+larger than the OLS estimator.  Therefore, we gain consistency, but
+lose efficiency, by using IV estimator when there is an endogeneity
+problem.
+
+Now we have a familiar scenario (if you are familiar with Hausman
+test for fixed effect and random effect estimator for panel data):
+Suppose we have the null hypothesis as the regressor being exogenous.
+We have an efficient estimator under null hypothesis yet inconsistent
+under alternative hypothesis (OLS estimator). We also have a
+consistent estimator under both null and alternative (IV estimator).
+
+Similar to panel data setting, we have the Hausman test statistic as:
+
+$$ H = (\hat \beta_c - \hat \beta_e)' D^{-} (\hat \beta_c - \hat
+\beta_e) $$
+
+where $D={\rm Var} [\hat \beta_c] - {\rm Var} [\hat \beta_e]$, $^-$ is
+the generalized inverse, $\hat \beta_c$ is the consistent estimator (in
+this case the IV estimator) and $\hat \beta_e$ is the efficient
+estimator (in this case OLS estimator).
+
+$H$ conforms to $\chi^2_k$ asymptotically, where $k$ is the number of endogenous
+variables.
+
+This test is to compare the IV estimator and the OLS estimator: if
+it's close, then OLS estimator is fine (fail to reject null that OLS
+is consistent, or say the variable is exogenous).  If it's large, then
+IV estimator is needed, although we lose some efficiency.  This test
+is  based on the assumption that the instruments are exogenous.
+If that is in question, then it's pointless to do the test, since the
+IV estimator cannot guarantee consistency either.
+
+
+
+### Implementation in Stata
+
+In Stata, there are different ways to do it:
+
+
+Do a regular Hausman test:
+
+    ivreg y x1 (x2=x3 x4)
+    estimates store iv
+    reg y x1 x2
+    hausman iv ., constant sigmamore
+
+Or, simply use  ivendog.
+
+
+
+## Identification
+
+Identification in a regression equation means that all parameters can
+be uniquely estimated.  A necessary condition of that is to have at
+least as many instruments as the number of endogenous variables.  That
+is, $l \ge k$ in our example above.  If $l=k$ we have
+exact-identification.  If $l>k$, we have over-identification.
+
+Over-identification generates more efficient estimates, given the
+assumption of instruments being exogenous.  The other advantage of
+over-identification is that over-identification tests can be done to
+test the adequacy of instruments.
+
+Under the null hypothesis that all the instruments are uncorrelated
+with the error term, an LM statistic  $N \times R^2$ conforms to
+$\chi^2 (r)$ distribution, $r=l-k$, the number of excess instruments,
+ or say, the number of excluded restrictions.  If we reject the null,
+ then we should be concerned about the exogeneity of the whole set of
+ the instruments.  This test is called Sargan's test in IV context, and
+ (Hansen's) J test in GMM context.
+
+ What the J test or Sargan's test does is to test the whole set of
+ instruments being exogenous or not.  There is another test for
+ testing exogeneity for a subset of instruments.  It's call a C test
+ or a difference-in-Sargan test.  The idea is to calculate the
+ difference between two Sargan's statistics (or Hansen's J in GMM
+ setting); one is with the whole set of instruments, the other one
+ without the suspected instruments.  The null is that the suspect
+ instruments are exogenous; or orthogonal to the error term.
+ Obviously to conduct the C test, we'll have to have at least one
+ extra instrument more than the number of endogenous variables.
+
+ To understand it better, we look at how to implement Sargan's test
+ manually: For the 2SLS estimator, the test statistic is Sargan's
+ statistic, typically calculated as $N \times R^2$ from a regression of
+ the IV residuals on the full set of instruments.
+
+
+    . ivregress 2sls rent pcturban (hsngval = faminc i.region)
+    . estat overid
+
+      Tests of overidentifying restrictions:
+
+      Sargan (score) chi2(3) =  11.2877  (p = 0.0103)
+      Basmann chi2(3)        =  12.8294  (p = 0.0050)
+
+    . predict res, residual
+
+    . reg res pcturban faminc i.region
+
+    . disp e(N)*e(r2)
+    11.287665
+
+
+
+
+### Implementation in Stata
+
+In Stata, there are different ways to do over-identification test,
+ivreg2 reports a comprehensive set of tests; overid command does the
+over-identification test after the ivreg command.
+
+  ivreg2 with   gmm option returns J test; it reports
+Sargan's test without this option.
+
+  ivreg2 also reports C test statistic, with ortho().  If the C test rejects the null, and J test without the suspect instruments fail to reject null, then the suspect instruments are indeed the ones are not exogenous.
+
+
+
+## Weak Instruments
+
+### Problem with the cure
+
+An instrument needs to satisfy to criteria: orthogonality and
+relevance.  We need instruments to be orthogonal to the error term.
+We can verify the orthogonality condition  by Sargan's test if there are extra
+instruments.
+
+It turns out instrument relevance is important too: if instruments are
+weak, then the regular large sample properties of IV or GMM estimators
+do not hold any more.  The estimators are inconsistent or biased.
+
+To see the problem, suppose
+
+$$
+\bf y=X\beta+u, \quad {\rm E} (u u')=\sigma_u^2 I, \label{eqn:wi1}
+$$
+
+$$
+\bf X=Z\Pi+v, \quad {\rm E} (v v')=\sigma_v^2 I, \label{eqn:wi2}
+$$
+
+and
+$$
+{\rm E}(\bf Z u )=0. \label{eqn:zu}
+$$
+
+We can see here $\bf Z$ is exogenous.  However, the model does not say
+anything about relevance.  To illustrate the problem caused by weak
+instrument, suppose we have only one endogenous variable and one
+instrument.
+
+$$
+\hat \beta_{2sls}=\frac{\bf Z' y}{\bf Z' X} = \frac{\bf Z'(X \beta +
+  u)}{\bf Z'
+  X}= \beta + \frac{\bf Z' u}{\bf Z' X} . \label{eqn:wk3}
+$$
+
+If $\bf Z$ is irrelevant, or, $\Pi=0$, then
+
+$$
+\hat \beta_{2sls}- \beta=\frac{\bf Z' u}{\bf Z' v} =\frac{ \frac{1}{\sqrt n}
+\sum_{i=1}^N Z_i u_i}{\frac{1}{\sqrt n} \sum_{i=1}^N Z_i v_i}
+\xrightarrow{d} \frac{z_u}{z_v} ,
+$$
+
+where
+
+$$
+\begin{bmatrix}
+z_u \\z_v
+\end{bmatrix}
+\sim N(0, \begin{bmatrix}
+\sigma_u^2 \quad \sigma_{uv} \\  \sigma_{uv} \quad \sigma_v^2
+\end{bmatrix}).
+$$
+
+Therefore, if $\bf Z$ is irrelavent, $\beta_{2sls}$ is inconsistent.
+Also, the distribution of the bias is Cauchy-like (the ratio of
+correlated normals).
+
+This is a case where the cure might be worse than the disease itself:
+the bias can be big comparing to the bias an OLS estimate suffers.
+
+### Weak Instrument Tests
+
+There are a variety of weak-instruments tests proposed.  Most of them
+are based on so-called weak-instruments asymptotics and a new
+parameter called "concentration parameter" $\mu^2 = \Pi' Z' Z \Pi
+/ \sigma_v^2$.  Sample size only enters the distribution through
+$\mu^2$.
+
+With weak-instruments asymptotics, IV estimators are no longer
+consistent, and they are not normal asymptotically.  Most test
+statistics (J test, etc.) do not have normal or $\chi^2$ distributions
+anymore.
+
+Now I list the following tests in the order of recommended level by
+James Stock:
+
+1. Moreira (2003) conditional likelihood ratio test (CLR).
+
+
+  Advantages of this test:
+      a.  Uniformly most powerful tests among valid tests.
+      b.  Implemented in Stata as condivereg.
+
+Disadvantages:
+
+   a.  Complicated.  Only developed so far for one endogenous
+  variable case.
+
+2.  Stock-Yogo bias method and size method.
+
+Stock and Yogo (2005) provide critical values for both methods: one is
+to control the size of bias, the other one is to control the size of a
+Wald test of $\beta=\beta_0$.  Bias method is more frequently used.
+In the case of multiple endogenous variables, the Craigg-Donald
+statistics is used to compare with the critical values.  It is
+implemented in Stata as part of the {\em ivreg2} command, but it's
+only available for the situation there are at least two excluded
+variables (meaning the number of instruments minus the number of
+endogenous variables).
+
+2.   Anderson-Rubin confidence intervals.
+
+In the model of
+
+$$
+\bf y=X\beta+u, \quad {\rm E} (u u')=\sigma_u^2 I,
+$$
+
+$$
+\bf X=Z\Pi+v, \quad {\rm E} (v v')=\sigma_v^2 I,
+$$
+
+The null hypothesis $H_0: \beta=\beta_0$.  Anderson-Rubin statistic
+is the F statistic in the regression of $y-X \beta_0$ on $Z$, the F
+test on $\Pi$ being zero:
+
+
+$$
+AR(\beta_0)= \frac{(y-X\beta_0)' P_Z (y-X\beta_0)/k}{(y-X\beta_0)' M_Z
+  (y-X\beta_0)/(N-k)}
+$$
+
+The idea of AR confidence interval is to construct an interval for all
+possible values of $\beta$ to fail to reject $\Pi=0$.
+
+3.  First-stage F test.
+
+The rule of thumb for first-stage F test is $F>10$ for a single
+instrument case, the more instruments, the higher it gets.
+
+4.   Kleibergen's LM test.
+
+This test is dominated by the CLR test, thus no longer the optimal
+test to use.
+
+5.   First-stage $R^2$, or partial $R^2$, etc., are not recommended.
+
+
+## When is endogeneity a problem and what can we say from an IV regression
+
+Let's consider a model of housing price on no. of rooms
+and square footage.
+
+$$ P = \alpha R + \beta F + \epsilon $$
+
+Should square footage really be there?  We are not interested in,
+given square footage, how much money we need to pay for an additional
+room.  We are generally interested in how much money we need to pay
+for an additional footage.  However, if we do not include footage,
+then we "sort of" have endogeneity problem due to omitted variable.
+
+Another example would be education's impact on wage.  Say IQ is an
+omitted variable.  Do we want to say something about education's
+impact on wage controlling on IQ, or not?
+
+So it depends on what questions to ask.  If I am a builder and ask
+what an extra bedroom on the already built house would bring to me, I
+need to control for footage.  If I am generally asking what an extra
+bedroom would cost, then I am implying what that bedroom and
+associated footage would cost me.  In that case, without controlling
+for footage is not a problem, since the question is:  what an
+additional bedroom (AND the associated average square footage) would
+cost me.
+
+In the wage and education example, if I am asking: what's the effect
+of education on wage?  I implicitly ask what would be my pay raise if
+I go to college (given IQ, of course), for example.  Then we are
+concerned that this model of
+$$ wage= \alpha edu + \epsilon $$
+will generate biased estimate of $\alpha$, because we are not
+controlling for IQ.  But if I am an employer and interested in hiring
+a person, what would I have to pay extra to hire a collage graduate
+vs. a high school graduate?  Then I don't have to include that IQ
+variable, because implicitly I am asking: what extra I need to pay for
+that college graduate who comes with a higher IQ, and everything else
+that is associated with higher education.
+
+In addition, what an IV regression really gives us is part of the causal
+inference of $X$ (suspected to be endogenous) on $y$, namely the part
+induced by $Z$.  For example, we are interested in the relationship
+between colleage education and wage.  If we use distance to college as
+an instrument, then our inference is the effect of college education
+from those who decide to go because of nearbyness of the college.

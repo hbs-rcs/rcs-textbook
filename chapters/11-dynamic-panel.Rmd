@@ -1,0 +1,36 @@
+# Dynamic Panel Data
+
+## when is it a problem
+
+Model setup:
+$$y_{i,t} = \gamma y_{i, t-1} + X \beta + C_i + \epsilon_{i,t}$$
+
+Pooled regression is biased and inconsistent.  The problem is:
+
+$$Cov( y_{i,t-1},  (C_i + \epsilon_{i,t})) \approx \frac{\sigma_c^2}{(1-\gamma)}$$
+
+Random effects model is biased and inconsistent, for the same reason
+that $y_{i,t-1}$ is necessarily correlated with $C_i$, which is part
+of the composite error term in the random effect model.
+
+Fixed effect model setup:
+
+$$ y_{i,t} - \bar y_i = (X_{i,t} - \bar X_i)' \beta + \gamma (y_{i, t-1} - \bar y_i) + (\epsilon_{i,t} - \bar \epsilon_i)$$
+
+Anderson and Hsiao (1981) show that
+
+$$Cov( (y_{i,t-1}- \bar y_i),  (\epsilon_{i,t} - \bar \epsilon_i )) \approx \frac{\sigma_\epsilon^2}{T (1-\gamma)^2} [\frac{(T-1)-T \gamma + \gamma^T}{T}]$$
+
+which indicates that the correlation between the demeaned lagged $y$
+is correlated with the demeaned error term.  The correlation may be
+large if $T$ is small, but when $T$ is big, then the correlation goes
+down to near zero.  When $T$ is big, we don't have a problem with
+fixed effect model.
+
+## how big is the bias
+
+When $T$ is small, which is typically the case in many microeconomic settings, then we say the fixed effect model with a lagged dependent variable is inconsistent.  But how bad is it?
+
+The limit of $\hat \gamma - \gamma$ is approximately $-\frac{(1+\gamma)}{T-1}$.  When $T=10$ and $\gamma=.5$, the bias is about $-0.167$ which is $1/3$ of the true value.
+
+But a simulation study (Judson and Owen 1999) shows that  the bias can be as big as $20\%$  of the true coefficient even when $T=30$.

@@ -1,0 +1,158 @@
+# OLS
+
+A linear model with $n$ observations and $k$ regressors can be
+written as (in vector forms)
+$$ \bf y=X\beta+u $$
+
+The idea of  least-squares is to choose $\beta$ to minimize the
+residual sum of squares ($SSR$),
+
+$$ SSR  =  \bf u'u = \bf (y-X\beta)'(y-X\beta) =  \bf y'y-2\beta'X'y+\beta'X'X\beta $$
+
+The first-order condition to minimize $SSR$ are:
+$$ \frac{\partial (SSR)}{\partial \beta} = \bf -2X'y+2X'X\beta=0$$
+
+This generates the so-called normal equations
+$$\bf (X'X)\beta=X'y$$
+
+Therefore, Ordinary Least Squares (OLS) estimator of $\beta$ is
+$$\bf \hat \beta=(X'X)^{-1}X'y$$
+
+
+## Example
+Let's look at an example of OLS of car's mpg on disp, hp and wt.
+```{r}
+library(car)
+
+lm1 <- lm(mpg~disp+hp+wt, data=mtcars)
+summary(lm1)
+```
+## Fitness of OLS
+
+We can see $y$ vector as the part explained by the regression
+and the unexplained part,
+$$ \bf y=\hat y+u=X\beta+u$$
+Therefore
+$$\bf y'y=(\hat y+u)'(\hat y +u)=\hat y' \hat y +u'u=\beta'X'X\beta +u'u $$
+
+Subtracting $n\bar y^2$ ($\bar y$ is the sample mean) from both
+sides,
+$$ \bf y'y-n\bar y^2=(\beta'X'X\beta-n\bar Y^2) +u'u $$
+
+
+We decompose the total sum of squares into two parts:  sum of
+squares due to error (noise), and sum of squares explained by the
+linear regression.
+
+The $R^2$ is defined by
+$$R^2=1-\frac{SSR}{SST}$$
+
+$SST$ is the total sum of squares, which is the total variance of $y$, $\bf y'y-n\bar y^2$.
+
+$R^2$ is simply the proportion of the variation of $Y$ that can be
+attributed to the variation of $X$.  $R^2$, however, will never
+decrease with the addition of any variable to the set of
+regressors.  If the added variable is totally irrelevant then
+$R^2$ will stay the same.  The adjusted $R^2$, however, takes
+account of the addition of any new regressors:
+
+$$\bar R^2=1-\frac{SSR/(n-k)}{SST/(n-1)}$$
+
+## The Geometry of Least Squares
+
+![](../figures/ols.jpg)
+
+For simplicity, let's assume there are two explanatory
+variables $x_1$ and $x_2$. $x_1$ and $x_2$ form a plane.  What OLS
+does is to project $y$ onto this plane.
+
+In mathematical terms, all linear combinations of these two
+vectors define a two-dimensional subspace of Euclidean space ${\rm \bf
+E}^n$.  This is called the column space of $\bf X$.  The least-square
+principle is to choose $\beta$ to make $\hat y$, which belongs to the
+subspace of $\bf X$, as close as possible to $y$.
+
+When we estimate a linear regression model, we map the $y$ into a vector of fitted values $\bf X \hat \beta$ and a vector of residuals $\bf \hat u =y-X \hat \beta$.  Geometrically, these are examples of orthogonal projections.  A projection is a mapping that takes each point of ${\rm \bf E}^n$ into a point in a subspace of ${\rm \bf E}^n$.  An orthogonal projection maps any point into the point of the subspace that is closest to it.
+
+An orthogonal projection  can be performed by premultiplying the vector to be projected by a projection matrix.  In the case of OLS, the two projection matrices that yield the vector of fitted values and the vector of residuals, are $$\bf P_X = \bf X(X'X)^{-1}X' $$ $$\bf M_X = \bf I-P_X = I- \bf X(X'X)^{-1}X'$$
+
+From this, we see that the effects of two projection matrices.
+$$\bf P_X y  =  \bf X \hat \beta =\bf \hat y  $$
+$$\bf M_X y  =  \bf (I-P_X)y = y- \bf P_X y = y-X \hat \beta =\hat u $$
+
+That is, $\bf P_X y$ projects $\bf y$ onto $\bf X$ and makes it $\bf \hat y$; $\bf M_X y$ makes it $\bf \hat u$.
+
+In the picture, that corresponds to the fact that the projection of $\bf y$ onto the plane of $\bf X$ creates two parts:  $\bf \hat y$ and $\bf \hat u$.
+
+
+## Properties of OLS estimator
+
+### Unbiasedness
+In a linear model
+$$
+\bf y=X\beta+u,
+$$
+ the OLS estimator is
+$$
+\bf \hat \beta=(X'X)^{-1}X'y
+$$
+
+Since $\bf y=X \beta+u$,
+
+$$
+\bf \hat \beta=\beta + (X'X)^{-1}X'u.
+$$
+
+This makes
+$$
+{\rm E} \bf (\hat \beta)=\beta + (X'X)^{-1}X'{\rm E} (u|X).
+$$
+
+The condition that makes the OLS estimator unbiased is:
+$$
+{\rm E} \bf (u|X)=0,
+\label{exog}
+$$
+
+that is, all explanatory variables which form the columns of $\bf X$
+are exogenous.  This condition is weaker than the independence
+condition that $u$ and $X$ are independent. This says that given $\bf
+X$, the expected value of $\bf u$ is zero; it implies that the model
+is correctly specified.  That is, $\bf y$ is a linear function of $\bf
+X$.
+
+In the context of cross-sectional data, this assumption is plausible.
+However, when we have time series data, the assumption becomes strong,
+because it assumes that the entire series of $\bf X$ has no
+relationship with the error term.  In a time series context, this is
+hard to satisfy.  The OLS estimator is biased if this condition
+is not satisfied.
+
+For example, suppose we have a model
+
+$$ y_t = \beta_1 + \beta_2 y_{t-1} + u_t, \quad u_t \sim {\rm IID} (0, \sigma^2). $$
+
+In this simple model, even if we assume that $y_{t-1}$ and $u_t$ are
+uncorrelated, OLS estimator is still biased.  That is because
+${\rm E} \bf (u|X)=0$
+is not satisfied: $y_{t-1}$ depends on $u_{t-1}$,
+$u_{t-2}$ and so on.
+
+
+There is a weaker condition:
+$$
+{\rm E} \bf (X u)=0,
+\label{exog2}
+$$
+
+Once we know that the model is correctly specified, then this equation can be used to derive results, such as GMM estimators.
+
+### Consistency
+
+For OLS estimator to be consistent, a much weaker condition is needed:
+$$
+{\rm E} (u_t|X_t)=0,
+\label{pred}
+$$
+
+This condition is much weaker since it only assumes that the mean of current error term does not depend on the current predictors.  Even a model with lagged dependent variable can easily satisfy this condition.  This condition is called predeterminedness condition, or say regressors are predetermined.  So in the time series example, OLS estimator is biased, but can be consistent, if we are willing to assume no contemporaneous correlation.
