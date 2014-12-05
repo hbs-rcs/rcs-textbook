@@ -12,4 +12,4 @@ book/econometrics-guide.md: $(MD_FILES)
 	./my_cat.sh $(MD_FILES) > $@
 
 book/econometrics-guide.pdf: book/econometrics-guide.md
-	cd book; pandoc --chapters econometrics-guide.md -o econometrics-guide.pdf
+	cd book; pandoc --chapters --highlight-style tango econometrics-guide.md -o econometrics-guide.pdf
