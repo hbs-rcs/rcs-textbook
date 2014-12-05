@@ -3,7 +3,7 @@ init:
 	mkdir -p book
 
 %.md: %.Rmd
-	Rscript knit.R $^ $(dir $^)
+	R -e "source('knit.R')" -e "my_knit('$^')" > /dev/null
 
 RMD_FILES = $(shell find chapters -name "*.Rmd")
 MD_FILES = $(patsubst %.Rmd, %.md, $(RMD_FILES))
