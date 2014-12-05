@@ -1,14 +1,14 @@
-bundle:
+init:
 	Rscript bundle.R
+	mkdir -p book
 
 %.md: %.Rmd
-	./knit.sh $^ $(dir $^)
+	Rscript knit.R $^ $(dir $^)
 
 RMD_FILES = $(shell find chapters -name "*.Rmd")
 MD_FILES = $(patsubst %.Rmd, %.md, $(RMD_FILES))
 
 book/econometrics-guide.md: $(MD_FILES)
-	mkdir -p book
 	./my_cat.sh $(MD_FILES) > $@
 
 book/econometrics-guide.pdf: book/econometrics-guide.md
